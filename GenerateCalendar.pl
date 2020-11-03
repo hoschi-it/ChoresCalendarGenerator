@@ -1,9 +1,15 @@
 #!/bin/env perl
 use strict;
 use warnings;
+
+use DateTime;
+use DateTime::Duration;
+
+
 use Data::Dumper;
 
 my $CalendarPath = 'calendar.csv';
+my $ToDoChar = 'O';
 
 
 sub ParseConfig {
@@ -11,7 +17,7 @@ sub ParseConfig {
   my @Config = ();
 
   open(my $ConfigFile, '<', $ConfigPath)
-    or die "Couldn't open file $ConfigPath, $!";
+   or die "Error! $!";
 
   my $WasFirstLineRead = 0;
 
@@ -32,13 +38,81 @@ sub ParseConfig {
       
       push @Config, $LineConfig ;
     }
-    $WasFirstLineRead = 1;
-  }
+    else {
+      $WasFirstLineRead = 1;
+    }
+  }    
   close($ConfigFile);
 
   return @Config;
 }
 
-my @Config = ParseConfig();
-print Dumper(@Config);
+
+sub WriteCalendar {
+  my @Tasks = @_;
+  my $CalendarPath = 'calendar.csv';
+  my $ToDoChar = 'O';
+  my $DaysToPrint = 30;
+
+  # Overwrite previously existing file
+  open(my $CalendarFile, '>', $CalendarPath);
+  print $CalendarFile " ";
+  close($CalendarFile);
+  
+  open($CalendarFile, '>>', $CalendarPath);
+ 
+  # Write Headers
+  foreach my $Task (@Tasks) {
+    print $CalendarFile $Task->{Name} . ';';
+  }
+  print $CalendarFile "\n";
+
+  # Generate Sequences of doing and not-doing
+  foreach my $Task (@Tasks) {
+    my @Sequence = ();
+    my $DaysSinceLastDone = $Task->{Period} - $Task->{Offset};
+
+    foreach (1 .. $DaysToPrint) {
+      $DaysSinceLastDone %= $Task->{Period};
+      my $IsDueToday = $DaysSinceLastDone == 0;
+      my $TodaysSymbol = $IsDueToday? $ToDoChar : ""; 
+      push @Sequence, $TodaysSymbol;
+      $DaysSinceLastDone++;
+    }
+  }
+
+  
+  my $Today = DateTime->today(
+    locale => 'de-DE',
+  );
+  $Today->set_time_zone( 'Europe/Berlin' );
+
+  # Write the row for each day
+  for (my $DayNum = 1; $DayNum <= $DaysToPrint; $DayNum++) {
+    
+    # Write the date
+    my $Date = $Today + DateTime::Duration->new( days => $DayNum -1);
+    print $Date->day_of_year == 1 ? $Date->year . ";" : ";" ;
+    print $Date->day_of_month == 1 ? $Date->month_abbr . ";" : ";";
+    print $Date->day_of_month . ";";
+    print $Date->day_abbr . ";";
+
+
+    # Write the task todo items 
+    foreach my $Task (@Tasks){
+      
+    }
+
+    print "\n";
+    
+  }
+
+  close($CalendarFile);
+}
+
+my @Chores = ParseConfig();
+
+# print "#A: " . Dumper(@Chores);
+
+WriteCalendar(@Chores);
 
