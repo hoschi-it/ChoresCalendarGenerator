@@ -94,8 +94,10 @@ sub WriteCalendar {
     
     # Write the date
     my $Date = $Today + DateTime::Duration->new( days => $DayNum -1);
-    print $CalendarFile $Date->day_of_year == 1 ? $Date->year . ";" : ";" ;
-    print $CalendarFile $Date->day_of_month == 1 ? $Date->month_abbr . ";" : ";";
+    my $IsYearToBeWritten  = ($Date->day_of_year == 1)  || ($DayNum == 1);
+    my $IsMonthToBeWritten = ($Date->day_of_month == 1) || ($DayNum == 1);
+    print $CalendarFile $IsYearToBeWritten  ? $Date->year . ";" : ";" ;
+    print $CalendarFile $IsMonthToBeWritten ?  $Date->month_abbr . ";" : ";";
     print $CalendarFile $Date->day_of_month . ";";
     print $CalendarFile $Date->day_abbr . ";";
 
