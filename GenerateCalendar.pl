@@ -62,6 +62,7 @@ sub WriteCalendar {
   open($CalendarFile, '>>', $CalendarPath);
  
   # Write Headers
+  print $CalendarFile ';;;;';
   foreach my $Task (@Tasks) {
     print $CalendarFile $Task->{Name} . ';';
   }
@@ -79,6 +80,7 @@ sub WriteCalendar {
       push @Sequence, $TodaysSymbol;
       $DaysSinceLastDone++;
     }
+    $Task->{Sequence} = [@Sequence];
   }
 
   
@@ -92,18 +94,18 @@ sub WriteCalendar {
     
     # Write the date
     my $Date = $Today + DateTime::Duration->new( days => $DayNum -1);
-    print $Date->day_of_year == 1 ? $Date->year . ";" : ";" ;
-    print $Date->day_of_month == 1 ? $Date->month_abbr . ";" : ";";
-    print $Date->day_of_month . ";";
-    print $Date->day_abbr . ";";
+    print $CalendarFile $Date->day_of_year == 1 ? $Date->year . ";" : ";" ;
+    print $CalendarFile $Date->day_of_month == 1 ? $Date->month_abbr . ";" : ";";
+    print $CalendarFile $Date->day_of_month . ";";
+    print $CalendarFile $Date->day_abbr . ";";
 
 
     # Write the task todo items 
     foreach my $Task (@Tasks){
-      
+       print $CalendarFile $Task->{Sequence}[$DayNum -1] . ";"; 
     }
 
-    print "\n";
+    print $CalendarFile "\n";
     
   }
 
