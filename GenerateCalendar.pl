@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 
+use Date::Parse;
 use DateTime;
 use DateTime::Duration;
 
@@ -11,6 +12,16 @@ use Data::Dumper;
 my $CalendarPath = 'calendar.csv';
 my $ToDoChar = 'O';
 
+sub ParseDate {
+    my $DateString = $_[0];
+    $_ = $DateString =~ /(?<day>[0-3]?[0-9]{1})\.(?<month>[0-1]?[0-9]{1})\.(?<year>[0-9]{1,4})/;
+    my ($Day, $Month, $Year) = ($1, $2, $3);
+    return DateTime->new(
+        year => $Year,
+        month => $Month,
+        day => $Day,
+    );
+}
 
 sub ParseConfig {
     my $ConfigPath = 'tasks.conf.csv';
@@ -26,13 +37,17 @@ sub ParseConfig {
         my $IsLineEmpty = $Line =~ m/^[\s]*$/;
         
         if( $WasFirstLineRead && not $IsLineEmpty ) {
-            my @LineValues = split /;/, $Line;
-            
+            my @LineValues = split /;/, $Line; 
+
+            my $LastDoneDate = ParseDate($LineValues[1]);
+            my $DaysPassedBy = (DateTime->now - $LastDoneDate)->days;
+
             my $LineConfig = {
                 Period => $LineValues[0],
-                Offset => $LineValues[1],
+                Offset => $DaysPassedBy,
                 Name => $LineValues[2],
             };
+            
             # remove the trailing newline
             $LineConfig->{Name} =~ s/[\r\n]{1}//g;
             
@@ -41,6 +56,7 @@ sub ParseConfig {
         else {
             $WasFirstLineRead = 1;
         }
+        
     }        
     close($ConfigFile);
 
