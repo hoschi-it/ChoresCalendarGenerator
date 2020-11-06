@@ -1,4 +1,4 @@
-package ChoresCal::ConfigReader;
+package ChoresCal::Config::Reader;
 
 use strict;
 use warnings;
@@ -16,22 +16,11 @@ sub Read {
 
     while(<$ConfigFile>) {
         my $Line = $_;
-        my $IsLineEmpty = $Line =~ m/^[\s]*$/;
         
-        if( $WasFirstLineRead && not $IsLineEmpty ) {
-            my @LineValues = split /;/, $Line; 
-
-            my $LineConfig = {
-                Period => $LineValues[0],
-                LastDoneDate => $LineValues[1],
-                Name => $LineValues[2],
-            };
-            
-            # remove the trailing newline
-            $LineConfig->{Name} =~ s/[\r\n]{1}//g;
-            
+        if( $WasFirstLineRead && not _IsLineEmpty($Line) ) {
+            my $LineConfig = ConstructHash($Line);
             push @Config, $LineConfig ;
-        }
+        } 
         else {
             $WasFirstLineRead = 1;
         }
@@ -41,5 +30,25 @@ sub Read {
 
     return @Config;
 }
+
+sub _IsLineEmpty {
+   my $Line = $_[0];
+   return $Line =~ m/^[\s]*$/;
+}
+
+sub ConstructHash {
+    my $Line = $_[0];
+    my @Values = split /;/, $Line; 
+    my $LineConfig = {
+        Period => $Values[0],
+        LastDoneDate => $Values[1],
+        Name => $Values[2],
+    };
+    # remove the trailing newline
+    $LineConfig->{Name} =~ s/[\r\n]{1}//g;
+    return $LineConfig;
+}
+
+
 
 1;

@@ -9,6 +9,7 @@ use Cwd qw(cwd);
 
 require "./lib/Date.pl";
 require "./lib/ConfigReader.pl";
+require "./lib/ConfigParser.pl";
 
 # TODO purge it?
 use Date::Parse;
@@ -22,21 +23,13 @@ my $ToDoChar     = 'O';
 
 
 sub ParseConfig {
-    my @Config = ChoresCal::ConfigReader::Read(
+    my @Config = ChoresCal::Config::Reader::Read(
         Path => $ConfigPath,
     );
 
-    foreach my $RefConfigEntry (@Config) {
-        my $LastDoneDateStr = $RefConfigEntry->{LastDoneDate};
-        my $LastDoneDate = ChoresCal::Date::Parse($LastDoneDateStr);
-
-        my $DaysPassedBy = ChoresCal::Date::DaysSince(
-            HistoricalDate => $LastDoneDate,
-            CurrentDate    => DateTime->now,
-        );
-        $RefConfigEntry->{Offset} = $DaysPassedBy;
-    }
-
+    @Config = ChoresCal::Config::Parser::Parse(
+        @Config
+    );
 
     return @Config;
 }
