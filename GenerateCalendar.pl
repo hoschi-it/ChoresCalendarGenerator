@@ -1,59 +1,42 @@
 #!/bin/env perl
+
+package ChoresCal;
+
 use strict;
 use warnings;
 
-require "./lib/Date.pl";
+use Cwd qw(cwd);
 
-# purge it?
+require "./lib/Date.pl";
+require "./lib/ConfigReader.pl";
+
+# TODO purge it?
 use Date::Parse;
 use DateTime;
 use DateTime::Duration;
 
 
-use Data::Dumper;
-
-my $CalendarPath = 'calendar.csv';
-my $ToDoChar = 'O';
+my $CalendarPath = cwd() . 'calendar.csv';
+my $ConfigPath   = cwd() . '/tasks.conf.csv';
+my $ToDoChar     = 'O';
 
 
 sub ParseConfig {
-    my $ConfigPath = 'tasks.conf.csv';
-    my @Config = ();
+    my @Config = ChoresCal::ConfigReader::Read(
+        Path => $ConfigPath,
+    );
 
-    open(my $ConfigFile, '<', $ConfigPath)
-     or die "Error! $!";
+    foreach my $RefConfigEntry (@Config) {
+        my $LastDoneDateStr = $RefConfigEntry->{LastDoneDate};
+        my $LastDoneDate = ChoresCal::Date::Parse($LastDoneDateStr);
 
-    my $WasFirstLineRead = 0;
+        my $DaysPassedBy = ChoresCal::Date::DaysSince(
+            HistoricalDate => $LastDoneDate,
+            CurrentDate    => DateTime->now,
+        );
+        $RefConfigEntry->{Offset} = $DaysPassedBy;
+    }
 
-    while(<$ConfigFile>) {
-        my $Line = $_;
-        my $IsLineEmpty = $Line =~ m/^[\s]*$/;
-        
-        if( $WasFirstLineRead && not $IsLineEmpty ) {
-            my @LineValues = split /;/, $Line; 
-
-            my $DaysPassedBy = ChoresCal::Date::DaysSince(
-                HistoricalDate => ChoresCal::Date::Parse($LineValues[1]),
-                CurrentDate    => DateTime->now,
-            );
-
-            my $LineConfig = {
-                Period => $LineValues[0],
-                Offset => $DaysPassedBy,
-                Name => $LineValues[2],
-            };
-            
-            # remove the trailing newline
-            $LineConfig->{Name} =~ s/[\r\n]{1}//g;
-            
-            push @Config, $LineConfig ;
-        }
-        else {
-            $WasFirstLineRead = 1;
-        }
-        
-    }        
-    close($ConfigFile);
 
     return @Config;
 }
