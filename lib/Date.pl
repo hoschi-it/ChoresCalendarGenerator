@@ -1,0 +1,21 @@
+package ChoresCal::Date;
+
+use strict;
+use warnings;
+
+use Date::Parse;
+use DateTime;
+use DateTime::Duration;
+
+sub Parse {
+    my $DateString = $_[0];
+    $_ = $DateString =~ /(?<day>[0-3]?[0-9]{1})\.(?<month>[0-1]?[0-9]{1})\.(?<year>[0-9]{1,4})/;
+    my ($Day, $Month, $Year) = ($1, $2, $3);
+    return DateTime->new(
+        year => $Year,
+        month => $Month,
+        day => $Day,
+    );
+}
+
+1;
