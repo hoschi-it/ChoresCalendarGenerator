@@ -32,8 +32,10 @@ sub ParseConfig {
         if( $WasFirstLineRead && not $IsLineEmpty ) {
             my @LineValues = split /;/, $Line; 
 
-            my $LastDoneDate = ChoresCal::Date::Parse($LineValues[1]);
-            my $DaysPassedBy = (DateTime->now - $LastDoneDate)->days;
+            my $DaysPassedBy = ChoresCal::Date::DaysSince(
+                HistoricalDate => ChoresCal::Date::Parse($LineValues[1]),
+                CurrentDate    => DateTime->now,
+            );
 
             my $LineConfig = {
                 Period => $LineValues[0],
@@ -69,7 +71,7 @@ sub WriteCalendar {
     close($CalendarFile);
     
     open($CalendarFile, '>>', $CalendarPath);
- 
+
     # Write Headers
     print $CalendarFile ';;;;';
     foreach my $Task (@Tasks) {

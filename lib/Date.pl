@@ -7,6 +7,7 @@ use Date::Parse;
 use DateTime;
 use DateTime::Duration;
 
+
 sub Parse {
     my $DateString = $_[0];
     $_ = $DateString =~ /(?<day>[0-3]?[0-9]{1})\.(?<month>[0-1]?[0-9]{1})\.(?<year>[0-9]{1,4})/;
@@ -16,6 +17,15 @@ sub Parse {
         month => $Month,
         day => $Day,
     );
+}
+
+sub DaysSince {
+    my %Params = @_;
+    my $HistoricalDate = $Params{HistoricalDate};
+    my $CurrentDate  = $Params{CurrentDate};
+
+    my $Difference   = $CurrentDate - $HistoricalDate;
+    return $Difference->days;
 }
 
 1;
