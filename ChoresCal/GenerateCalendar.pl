@@ -7,9 +7,9 @@ use warnings;
 
 use Cwd qw(cwd);
 
-require "./lib/Date.pl";
-require "./lib/ConfigReader.pl";
-require "./lib/ConfigParser.pl";
+require ChoresCal::Date;
+require ChoresCal::Config::Reader;
+require ChoresCal::Config::Parser;
 
 # TODO purge it?
 use Date::Parse;
@@ -26,11 +26,9 @@ sub ParseConfig {
     my @Config = ChoresCal::Config::Reader::Read(
         Path => $ConfigPath,
     );
-
     @Config = ChoresCal::Config::Parser::Parse(
         @Config
     );
-
     return @Config;
 }
 
