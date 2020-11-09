@@ -7,6 +7,8 @@ use warnings;
 
 use Cwd qw(cwd);
 
+use lib '.';
+
 require ChoresCal::Date;
 require ChoresCal::Config::Reader;
 require ChoresCal::Config::Parser;
