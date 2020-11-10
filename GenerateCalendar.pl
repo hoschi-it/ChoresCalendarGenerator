@@ -12,6 +12,7 @@ use lib '.';
 require ChoresCal::Date;
 require ChoresCal::Config::Reader;
 require ChoresCal::Config::Parser;
+require ChoresCal::Writer;
 
 # TODO purge it?
 use Date::Parse;
@@ -22,6 +23,8 @@ use DateTime::Duration;
 my $CalendarPath = cwd() . 'calendar.csv';
 my $ConfigPath   = cwd() . '/tasks.conf.csv';
 my $ToDoChar     = 'O';
+my $DaysToPrint = 30;
+my $CalendarPath = 'calendar.csv';
 
 
 sub ParseConfig {
@@ -37,9 +40,6 @@ sub ParseConfig {
 
 sub WriteCalendar {
     my @Tasks = @_;
-    my $CalendarPath = 'calendar.csv';
-    my $ToDoChar = 'O';
-    my $DaysToPrint = 30;
 
     # Overwrite previously existing file
     open(my $CalendarFile, '>', $CalendarPath);
@@ -81,11 +81,15 @@ sub WriteCalendar {
         
         # Write the date
         my $Date = $Today + DateTime::Duration->new( days => $DayNum -1);
-        my $IsYearToBeWritten    = ($Date->day_of_year == 1)    || ($DayNum == 1);
-        my $IsMonthToBeWritten = ($Date->day_of_month == 1) || ($DayNum == 1);
+        my $IsYearToBeWritten = ($Date->day_of_year == 1)   
+                                ||   ($DayNum == 1);
+        my $IsMonthToBeWritten = ($Date->day_of_month == 1) 
+                                 || ($DayNum == 1);
 
-        print $CalendarFile $IsYearToBeWritten    ? $Date->year . ";" : ";" ;
-        print $CalendarFile $IsMonthToBeWritten ?    $Date->month_abbr . ";" : ";";
+        print $CalendarFile $IsYearToBeWritten ? 
+            $Date->year . ";" : ";" ;
+        print $CalendarFile $IsMonthToBeWritten ?
+            $Date->month_abbr . ";" : ";";
         print $CalendarFile $Date->day_of_month . ";";
         print $CalendarFile $Date->day_abbr . ";";
 
