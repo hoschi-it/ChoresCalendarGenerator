@@ -3,9 +3,17 @@ package ChoresCal::Config::Reader;
 use strict;
 use warnings;
 
+use lib '../..';
+require ChoresCal::Utils;
+
 
 sub Read {
     my %Params = @_;
+    ChoresCal::Utils::RequireParams(
+        Params => \%Params,
+        Required => [ qw( Path ) ],
+    );
+
     my $ConfigPath = $Params{Path};
     my @Config = ();
 

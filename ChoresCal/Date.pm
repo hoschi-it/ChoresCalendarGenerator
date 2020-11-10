@@ -7,6 +7,8 @@ use Date::Parse;
 use DateTime;
 use DateTime::Duration;
 
+use lib '..';
+require ChoresCal::Utils;
 
 sub Parse {
     my $DateString = $_[0];
@@ -21,6 +23,11 @@ sub Parse {
 
 sub DaysSince {
     my %Params = @_;
+    ChoresCal::Utils::RequireParams(
+        Params => \%Params,
+        Required => [ qw( HistoricalDate CurrentDate )],
+    );
+
     my $HistoricalDate = $Params{HistoricalDate};
     my $CurrentDate  = $Params{CurrentDate};
 

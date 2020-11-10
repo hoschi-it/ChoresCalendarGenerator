@@ -20,6 +20,13 @@ sub Write {
         Params => \%Params,
         Required => [ qw(File Tasks ToDoChar DaysCount ) ],
     );
+    my @Tasks = @{$Params{Tasks}};
+    {
+        my $ExistsTasks = defined (scalar @Tasks);
+        my $FirstTask = $Tasks[0];
+        my $ExistsTaskSequence = exists($FirstTask->{Sequence});
+        #  ok $ExistsTasks && $ExistsTaskSequence, ParamTestMsg('sequence of the first task');
+    }
 
     my $FileHandle = _OpenEmptyFileHandle(
         FilePath => $Params{File}
@@ -30,25 +37,17 @@ sub Write {
         Tasks      => $Params{Tasks},
     );
 
-    my @Tasks = @{$Params{Tasks}};
-    {
-        my $ExistsTasks = defined (scalar @Tasks);
-        my $FirstTask = $Tasks[0];
-        my $ExistsTaskSequence = exists($FirstTask->{Sequence});
-        #  ok $ExistsTasks && $ExistsTaskSequence, ParamTestMsg('sequence of the first task');
-    }
-
     _WriteTasks(
         DaysCount  => $Params{DaysCount},
         FileHandle => $FileHandle,
         Tasks      => [@Tasks],
         ToDoChar   => $Params{ToDoChar},
     );
+    close($CalendarFile);
 }
 
 
 sub _OpenEmptyFileHandle {
-    # needs to contain File
     my %Params = @_;
     ChoresCal::Utils::RequireParams(
         Params   => \%Params,
@@ -139,7 +138,6 @@ sub _WriteTasks {
         }
         print $CalendarFile "\n";
     }
-    close($CalendarFile);
 }
 
 
