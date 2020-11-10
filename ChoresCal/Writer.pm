@@ -29,22 +29,23 @@ sub Write {
         Tasks      => $Params{Tasks},
     );
 
-    _GenerateTasksSequences(
+    my @Tasks = _GenerateTasksSequences(
         Tasks     => $Params{Tasks},
         DaysCount => $Params{DaysCount},
         ToDoChar  => $Params{ToDoChar},
     );
     
     {
-        my $ExistsTaskSequence = exists($Params{Tasks}) and 
-                                 exists($Params{Tasks}[0]{Sequence});
-        ok $ExistsTaskSequence, ParamTestMsg('sequence of the first task');
+        my $ExistsTasks = defined (scalar @Tasks);
+        my $FirstTask = $Tasks[0];
+        my $ExistsTaskSequence = exists($FirstTask->{Sequence});
+        ok $ExistsTasks && $ExistsTaskSequence, ParamTestMsg('sequence of the first task');
     }
 
     _WriteTasks(
-        DaysCount => $Params{DaysCount},
+        DaysCount  => $Params{DaysCount},
         FileHandle => $FileHandle,
-        Tasks      => $Params{Tasks},
+        Tasks      => [@Tasks],
     );
 
     #_OldWayToDoIt();
@@ -79,7 +80,7 @@ sub _WriteHeaders {
         print $File $Task->{Name} . ';';
     }
     print $File "\n";
- }
+}
 
 
 sub _GenerateTasksSequences {
@@ -88,8 +89,9 @@ sub _GenerateTasksSequences {
     ok exists($Params{DaysCount}), ParamTestMsg('number of days to print');
     ok exists($Params{ToDoChar}),  ParamTestMsg('character to represent ToDo items');
 
+    my @Tasks = @{$Params{Tasks}};
     # Generate Sequences of doing and not-doing
-    foreach my $Task (@{$Params{Tasks}}) {
+    foreach my $Task (@Tasks) {
         my @Sequence = ();
         my $DaysSinceLastDone = $Task->{Period} - $Task->{Offset};
 
@@ -102,6 +104,8 @@ sub _GenerateTasksSequences {
         }
         $Task->{Sequence} = [@Sequence];
     }
+
+    return @Tasks;
 }
 
 
@@ -116,8 +120,7 @@ sub _WriteTasks {
     );
     $Today->set_time_zone( 'Europe/Berlin' );
 
-    my $CalendarFile = \$Params{FileHandle};
-    print "#44: " . ref($CalendarFile);
+    my $CalendarFile = $Params{FileHandle};
 
     # Write the row for each day
     my $DayNum;
@@ -137,19 +140,15 @@ sub _WriteTasks {
         print $CalendarFile $Date->day_of_month . ";";
         print $CalendarFile $Date->day_abbr . ";";
 
-
         # Write the task todo items 
-        foreach my $Task ($Params{Tasks}){
-             print $CalendarFile $Task->{Sequence}[$DayNum -1] . ";"; 
+        foreach my $Task (@{$Params{Tasks}}){
+            my $Char = $Task->{Sequence}[$DayNum -1] . ";";
+            print $CalendarFile $Char;
         }
         print $CalendarFile "\n";
     }
     close($CalendarFile);
 }
 
-# sub _OldWayToDoIt {
-# 
-# 
-# }
 
 1;
