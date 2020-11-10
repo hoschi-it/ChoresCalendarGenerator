@@ -12,6 +12,7 @@ use lib '.';
 require ChoresCal::Date;
 require ChoresCal::Config::Reader;
 require ChoresCal::Config::Parser;
+require ChoresCal::Scheduler;
 require ChoresCal::Writer;
 
 
@@ -27,6 +28,11 @@ my @Chores = ChoresCal::Config::Reader::Read(
 
 @Chores = ChoresCal::Config::Parser::Parse(
     @Chores
+);
+
+@Chores = ChoresCal::Scheduler::GenerateTasksSequences(
+    Tasks     => [@Chores],
+    DaysCount => $DaysToPrint,
 );
 
 ChoresCal::Writer::Write(

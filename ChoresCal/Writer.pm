@@ -3,22 +3,23 @@ package ChoresCal::Writer;
 use strict;
 use warnings;
 
+require DateTime;
+require DateTime::Duration;
+
 use Test::More;
+use Params::Check qw{check};
 
+use lib '..';
+require ChoresCal::Utils;
 
-sub ParamTestMsg {
-    my $Description       = $_[0];
-    my $ParamTestMsg = 'The %s should be given.';
-    my $Sentence = sprintf($ParamTestMsg, $Description);
-    return $Sentence;
-}
 
 sub Write {
     my %Params = @_;
-    ok exists($Params{File}),      ParamTestMsg('filepath');
-    ok exists($Params{Tasks}),     ParamTestMsg('tasks');
-    ok exists($Params{ToDoChar}),  ParamTestMsg('character to mark a to do item');
-    ok exists($Params{DaysCount}), ParamTestMsg('number of days to print');
+
+    ChoresCal::Utils::RequireParams(
+        Params => \%Params,
+        Required => [ qw(File Tasks ToDoChar DaysCount ) ],
+    );
 
     my $FileHandle = _OpenEmptyFileHandle(
         FilePath => $Params{File}
@@ -29,33 +30,30 @@ sub Write {
         Tasks      => $Params{Tasks},
     );
 
-    my @Tasks = _GenerateTasksSequences(
-        Tasks     => $Params{Tasks},
-        DaysCount => $Params{DaysCount},
-        ToDoChar  => $Params{ToDoChar},
-    );
-    
+    my @Tasks = @{$Params{Tasks}};
     {
         my $ExistsTasks = defined (scalar @Tasks);
         my $FirstTask = $Tasks[0];
         my $ExistsTaskSequence = exists($FirstTask->{Sequence});
-        ok $ExistsTasks && $ExistsTaskSequence, ParamTestMsg('sequence of the first task');
+        #  ok $ExistsTasks && $ExistsTaskSequence, ParamTestMsg('sequence of the first task');
     }
 
     _WriteTasks(
         DaysCount  => $Params{DaysCount},
         FileHandle => $FileHandle,
         Tasks      => [@Tasks],
+        ToDoChar   => $Params{ToDoChar},
     );
-
-    #_OldWayToDoIt();
-
 }
+
 
 sub _OpenEmptyFileHandle {
     # needs to contain File
     my %Params = @_;
-    ok exists($Params{FilePath}), ParamTestMsg('filepath');
+    ChoresCal::Utils::RequireParams(
+        Params   => \%Params,
+        Required => [ qw(FilePath)  ],
+    );
 
     # Overwrite previously existing file
     open(my $CalendarFile, '>', $Params{FilePath});
@@ -67,10 +65,13 @@ sub _OpenEmptyFileHandle {
     return $CalendarFile;
 }
 
+
 sub _WriteHeaders {
     my %Params = @_;
-    ok exists($Params{FileHandle}), ParamTestMsg('file handle');
-    ok exists($Params{Tasks}),      ParamTestMsg('tasks configuration');
+    ChoresCal::Utils::RequireParams(
+        Params   => \%Params,
+        Required => [ qw(FileHandle Tasks)  ],
+    );
 
     my $File = $Params{FileHandle};
 
@@ -83,44 +84,37 @@ sub _WriteHeaders {
 }
 
 
-sub _GenerateTasksSequences {
-    my %Params = @_;
-    ok exists($Params{Tasks}),     ParamTestMsg('tasks configuration');
-    ok exists($Params{DaysCount}), ParamTestMsg('number of days to print');
-    ok exists($Params{ToDoChar}),  ParamTestMsg('character to represent ToDo items');
+sub _GetDateStr {
+    my %Params= @_;
+    ChoresCal::Utils::RequireParams(
+        Params   => \%Params,
+        Required => [ qw(IsFirst Date)  ],
+    );
+   
+    my $IsYearToBeWritten  = ($Params{Date}->day_of_year  == 1) || $Params{IsFirst};
+    my $IsMonthToBeWritten = ($Params{Date}->day_of_month == 1) || $Params{IsFirst};
 
-    my @Tasks = @{$Params{Tasks}};
-    # Generate Sequences of doing and not-doing
-    foreach my $Task (@Tasks) {
-        my @Sequence = ();
-        my $DaysSinceLastDone = $Task->{Period} - $Task->{Offset};
-
-        foreach (1 .. $Params{DaysCount}) {
-            $DaysSinceLastDone %= $Task->{Period};
-            my $IsDueToday = $DaysSinceLastDone == 0;
-            my $TodaysSymbol = $IsDueToday? $Params{ToDoChar} : ""; 
-            push @Sequence, $TodaysSymbol;
-            $DaysSinceLastDone++;
-        }
-        $Task->{Sequence} = [@Sequence];
-    }
-
-    return @Tasks;
+    my $CsvDate = "";
+    $CsvDate .= $IsYearToBeWritten ? $Params{Date}->year . ";" : ";" ;
+    $CsvDate .= $IsMonthToBeWritten ? $Params{Date}->month_abbr . ";" : ";";
+    $CsvDate .= $Params{Date}->day_of_month . ";";
+    $CsvDate .= $Params{Date}->day_abbr . ";";
+    return $CsvDate;
 }
 
 
 sub _WriteTasks {
     my %Params = @_;
-    ok exists($Params{DaysCount}),  ParamTestMsg('number of days to print');
-    ok exists($Params{FileHandle}), ParamTestMsg('calendar file handle'); 
-    ok exists($Params{Tasks}),      ParamTestMsg('task configuration');
+    ChoresCal::Utils::RequireParams(
+        Params   => \%Params,
+        Required => [ qw(DaysCount FileHandle Tasks ToDoChar)  ],
+    );
 
+    my $CalendarFile = $Params{FileHandle};
     my $Today = DateTime->today(
         locale => 'de-DE',
     );
     $Today->set_time_zone( 'Europe/Berlin' );
-
-    my $CalendarFile = $Params{FileHandle};
 
     # Write the row for each day
     my $DayNum;
@@ -128,22 +122,20 @@ sub _WriteTasks {
         
         # Write the date
         my $Date = $Today + DateTime::Duration->new( days => $DayNum -1);
-        my $IsYearToBeWritten = ($Date->day_of_year == 1)   
-                                ||   ($DayNum == 1);
-        my $IsMonthToBeWritten = ($Date->day_of_month == 1) 
-                                 || ($DayNum == 1);
-
-        print $CalendarFile $IsYearToBeWritten ? 
-            $Date->year . ";" : ";" ;
-        print $CalendarFile $IsMonthToBeWritten ?
-            $Date->month_abbr . ";" : ";";
-        print $CalendarFile $Date->day_of_month . ";";
-        print $CalendarFile $Date->day_abbr . ";";
+        my $DateStr = _GetDateStr(
+            IsFirst => $DayNum == 1,
+            Date    => $Date,
+        );
+        print $CalendarFile $DateStr;
 
         # Write the task todo items 
         foreach my $Task (@{$Params{Tasks}}){
-            my $Char = $Task->{Sequence}[$DayNum -1] . ";";
-            print $CalendarFile $Char;
+            my $Text = "";
+            if($Task->{Sequence}[$DayNum -1]) {
+                $Text .= $Params{ToDoChar};
+            }
+            $Text .= ";";
+            print $CalendarFile $Text;
         }
         print $CalendarFile "\n";
     }
