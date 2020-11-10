@@ -6,19 +6,19 @@ use warnings;
 use Test::More;
 
 
-sub ParamCheckMessage {
+sub ParamTestMsg {
     my $Description       = $_[0];
-    my $ParamCheckMessage = 'The %s should be given.';
-    my $Sentence = sprintf($ParamCheckMessage, $Description);
+    my $ParamTestMsg = 'The %s should be given.';
+    my $Sentence = sprintf($ParamTestMsg, $Description);
     return $Sentence;
 }
 
 sub Write {
     my %Params = @_;
-    ok exists($Params{File}),      ParamCheckMessage('filepath');
-    ok exists($Params{Tasks}),     ParamCheckMessage('tasks');
-    ok exists($Params{ToDoChar}),  ParamCheckMessage('character to mark a to do item');
-    ok exists($Params{DaysCount}), ParamCheckMessage('number of days to print');
+    ok exists($Params{File}),      ParamTestMsg('filepath');
+    ok exists($Params{Tasks}),     ParamTestMsg('tasks');
+    ok exists($Params{ToDoChar}),  ParamTestMsg('character to mark a to do item');
+    ok exists($Params{DaysCount}), ParamTestMsg('number of days to print');
 
     my $FileHandle = _OpenEmptyFileHandle(
         FilePath => $Params{File}
@@ -38,8 +38,14 @@ sub Write {
     {
         my $ExistsTaskSequence = exists($Params{Tasks}) and 
                                  exists($Params{Tasks}[0]{Sequence});
-        ok $ExistsTaskSequence, ParamCheckMessage('sequence of the first task');
+        ok $ExistsTaskSequence, ParamTestMsg('sequence of the first task');
     }
+
+    _WriteTasks(
+        DaysCount => $Params{DaysCount},
+        FileHandle => $FileHandle,
+        Tasks      => $Params{Tasks},
+    );
 
     #_OldWayToDoIt();
 
@@ -48,7 +54,7 @@ sub Write {
 sub _OpenEmptyFileHandle {
     # needs to contain File
     my %Params = @_;
-    ok exists($Params{FilePath}), ParamCheckMessage('filepath');
+    ok exists($Params{FilePath}), ParamTestMsg('filepath');
 
     # Overwrite previously existing file
     open(my $CalendarFile, '>', $Params{FilePath});
@@ -62,8 +68,8 @@ sub _OpenEmptyFileHandle {
 
 sub _WriteHeaders {
     my %Params = @_;
-    ok exists($Params{FileHandle}), ParamCheckMessage('file handle');
-    ok exists($Params{Tasks}),      ParamCheckMessage('tasks configuration');
+    ok exists($Params{FileHandle}), ParamTestMsg('file handle');
+    ok exists($Params{Tasks}),      ParamTestMsg('tasks configuration');
 
     my $File = $Params{FileHandle};
 
@@ -75,14 +81,12 @@ sub _WriteHeaders {
     print $File "\n";
  }
 
-sub _WriteTasks {
-}
 
 sub _GenerateTasksSequences {
     my %Params = @_;
-    ok exists($Params{Tasks}),     ParamCheckMessage('tasks configuration');
-    ok exists($Params{DaysCount}), ParamCheckMessage('number of days to print');
-    ok exists($Params{ToDoChar}),  ParamCheckMessage('character to represent ToDo items');
+    ok exists($Params{Tasks}),     ParamTestMsg('tasks configuration');
+    ok exists($Params{DaysCount}), ParamTestMsg('number of days to print');
+    ok exists($Params{ToDoChar}),  ParamTestMsg('character to represent ToDo items');
 
     # Generate Sequences of doing and not-doing
     foreach my $Task (@{$Params{Tasks}}) {
@@ -101,39 +105,51 @@ sub _GenerateTasksSequences {
 }
 
 
+sub _WriteTasks {
+    my %Params = @_;
+    ok exists($Params{DaysCount}),  ParamTestMsg('number of days to print');
+    ok exists($Params{FileHandle}), ParamTestMsg('calendar file handle'); 
+    ok exists($Params{Tasks}),      ParamTestMsg('task configuration');
+
+    my $Today = DateTime->today(
+        locale => 'de-DE',
+    );
+    $Today->set_time_zone( 'Europe/Berlin' );
+
+    my $CalendarFile = \$Params{FileHandle};
+    print "#44: " . ref($CalendarFile);
+
+    # Write the row for each day
+    my $DayNum;
+    for ($DayNum = 1; $DayNum <= $Params{DaysCount}; $DayNum++) {
+        
+        # Write the date
+        my $Date = $Today + DateTime::Duration->new( days => $DayNum -1);
+        my $IsYearToBeWritten = ($Date->day_of_year == 1)   
+                                ||   ($DayNum == 1);
+        my $IsMonthToBeWritten = ($Date->day_of_month == 1) 
+                                 || ($DayNum == 1);
+
+        print $CalendarFile $IsYearToBeWritten ? 
+            $Date->year . ";" : ";" ;
+        print $CalendarFile $IsMonthToBeWritten ?
+            $Date->month_abbr . ";" : ";";
+        print $CalendarFile $Date->day_of_month . ";";
+        print $CalendarFile $Date->day_abbr . ";";
+
+
+        # Write the task todo items 
+        foreach my $Task ($Params{Tasks}){
+             print $CalendarFile $Task->{Sequence}[$DayNum -1] . ";"; 
+        }
+        print $CalendarFile "\n";
+    }
+    close($CalendarFile);
+}
+
 # sub _OldWayToDoIt {
 # 
-#     my $Today = DateTime->today(
-#         locale => 'de-DE',
-#     );
-#     $Today->set_time_zone( 'Europe/Berlin' );
 # 
-#     # Write the row for each day
-#     my $DayNum;
-#     for ($DayNum = 1; $DayNum <= $DaysToPrint; $DayNum++) {
-#         
-#         # Write the date
-#         my $Date = $Today + DateTime::Duration->new( days => $DayNum -1);
-#         my $IsYearToBeWritten = ($Date->day_of_year == 1)   
-#                                 ||   ($DayNum == 1);
-#         my $IsMonthToBeWritten = ($Date->day_of_month == 1) 
-#                                  || ($DayNum == 1);
-# 
-#         print $CalendarFile $IsYearToBeWritten ? 
-#             $Date->year . ";" : ";" ;
-#         print $CalendarFile $IsMonthToBeWritten ?
-#             $Date->month_abbr . ";" : ";";
-#         print $CalendarFile $Date->day_of_month . ";";
-#         print $CalendarFile $Date->day_abbr . ";";
-# 
-# 
-#         # Write the task todo items 
-#         foreach my $Task (@Tasks){
-#              print $CalendarFile $Task->{Sequence}[$DayNum -1] . ";"; 
-#         }
-#         print $CalendarFile "\n";
-#     }
-#     close($CalendarFile);
 # }
 
 1;
